@@ -20,18 +20,26 @@ const char * const usage = "" \
 "  <Set-Cookie syntax> Set a cookie in the cookies file using the Set-Cookie HTTP header syntax\n" \
 "\n";
 
+#define EEXIT() \
+  cookiejar_finish(&jar); \
+  if (fp) fclose(fp); \
+  return (1);
+
 int main(int argc, char *argv[]) {
-  char *path;
-  bool json = false, set_cookie = false;
-  Cookie new = {0};
-  Cookiejar jar;
+  char *cookies_file_path;
+  /* What the program is doing */
+  bool json = false,
+    set_cookie = false;
+  Cookie new = {0}; /* If set_cookie, the new cookie */
+  Cookiejar jar = {0}; /* holds cookies file data */
+  FILE *fp = NULL; /* Gets open w+ for any changes to cookies */
 
   if (argc < 3) {
     fputs(usage, stderr);
-    return 1;
+    EEXIT();
   }
 
-  path = argv[2];
+  cookies_file_path = argv[2];
 
   if (0 == strcmp(argv[1], "--json") || 0 == strcmp(argv[1], "-j")) {
     /* we're gonna print some JSON */
@@ -46,25 +54,25 @@ int main(int argc, char *argv[]) {
         break;
       default: /* Any other error */
         fprintf(stderr, "error: Set-Cookie: %s\n", SetCookie_result_strings[result]);
-        return 1;
+        EEXIT();
     }
   }
 
-  /* Open the file */
-  switch (cookiejar_open(path, &jar)) {
+  /* Load the cookies file */
+  switch (cookiejar_open(cookies_file_path, &jar)) {
     case COOKIEJAR_RESULT_OPEN_FAILED:
     case COOKIEJAR_RESULT_MAP_FAILED:
       fprintf(stderr, "error: could not load cookies file (errno %i)\n", errno);
-      return 1;
+      EEXIT();
     case COOKIEJAR_RESULT_INVALID_FILE:
       fprintf(stderr, "error: invalid cookies file\n");
-      return 1;
+      EEXIT();
   }
 
   if (json) { /* JSON */
     if (!cookiejar_JSON(&jar, stdout)) {
       fprintf(stderr, "error: could not print JSON (errno %i)\n\n", errno);
-      return 1;
+      EEXIT();
     }
   } else if (set_cookie) { /* Set-Cookie: */
     int x = -1;
@@ -91,13 +99,17 @@ int main(int argc, char *argv[]) {
     /* Set new cookie */
     memcpy(&jar.cookies[x], &new, sizeof(Cookie));
 
-    if ((fp = fopen(path, "w+")) == NULL) {
-      return 1;
+    if ((fp = fopen(cookies_file_path, "w+")) == NULL) {
+      fprintf(stderr, "error: could not open cookies file for write (errno %i)\n", errno);
+      EEXIT();
     }
 
-    if (COOKIEJAR_RESULT_OK != cookiejar_write(&jar, stdout)) {
-      return 1;
+    if (!cookiejar_write(&jar, fp)) {
+      fprintf(stderr, "error: could not write cookies file (errno %i)\n", errno);
+      EEXIT();
     }
+
+    fclose(fp);
   }
 
   cookiejar_finish(&jar);

@@ -9,15 +9,11 @@
 #include "SetCookie.h"
 
 const char * const usage = "" \
-"cookiejar <option> <Netscape HTTP cookies file>\n" \
+"usage: cookiejar <option> <Netscape HTTP cookie file>\n" \
 "options:\n" \
-"  --help Print this dialogue\n" \
-"  -h\n" \
-"\n" \
-"  --json Print the cookies as a null-terminated JSON array of cookie objects to stdout\n" \
-"  -j\n" \
-"\n" \
-"  <Set-Cookie syntax> Set a cookie in the cookies file using the Set-Cookie HTTP header syntax\n" \
+"  <Set-Cookie header> Set a cookie in the cookie file using HTTP Set-Cookie header syntax\n" \
+"  -j, --json Print the cookies as a null-terminated JSON array of cookie objects to stdout\n" \
+"  -h, --help Print this dialogue\n" \
 "\n";
 
 #define EEXIT() \

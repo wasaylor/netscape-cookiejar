@@ -132,6 +132,20 @@ enum SetCookie_result SetCookie(char *header, Cookie *c) {
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
   c->Name = pair.name;
 
+  if (*pair.value == '\"') { /* DQUOTE *cookie-octet DQUOTE */
+    char *ldquote;
+
+    ldquote = strrchr(pair.value + 1, '\"');
+    fputs(ldquote, stderr);
+    if (!ldquote || *(ldquote + 1) != '\0') /* doesn't end with a DQUOTE */
+      return SET_COOKIE_RESULT_INVALID_SYNTAX;
+
+    /* move past first DQUOTE and null-terminate last DQUOTE */
+    ++pair.value;
+    *ldquote = '\0';
+    fputs(pair.value, stderr);
+  }
+
   if (!is_rfc6265_cookie_octet(pair.value) || *pair.value == '\0')
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
   c->Value = pair.value;

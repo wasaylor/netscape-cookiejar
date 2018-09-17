@@ -148,7 +148,9 @@ bool cookiejar_JSON(Cookiejar *jar, FILE *fp) {
 }
 
 enum cookiejar_result cookiejar_finish(Cookiejar *jar) {
-  munmap(jar->file, jar->st_size);
+  if (jar->file)
+    munmap(jar->file, jar->st_size);
+
   memset(jar, 0, sizeof(Cookiejar));
 
   return COOKIEJAR_RESULT_OK;

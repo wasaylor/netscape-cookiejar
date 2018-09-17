@@ -77,14 +77,22 @@ int main(int argc, char *argv[]) {
     int x = -1;
     FILE *fp;
 
-    /* Check if the cookie already exists */
+    /* Check if we already have the cookie */
     for (int i = 0; i < jar.n; i++) {
+      int match = 0;
+
       if (jar.cookies[i].comm)
         continue;
 
-      if (strcmp(jar.cookies[i].Name, new.Name) == 0 &&
-        strcmp(jar.cookies[i].Domain, new.Domain) == 0) {
-        x = i; /* found it */
+      /* If the user agent receives a new cookie with the same cookie-name,
+         domain-value, and path-value as a cookie that it has already stored,
+         the existing cookie is evicted and replaced with the new cookie. */
+      match += strcmp(jar.cookies[i].Name, new.Name);
+      match += strcmp(jar.cookies[i].Domain, new.Domain);
+      match += strcmp(jar.cookies[i].Path, new.Path);
+
+      if (0 == match) {
+        x = i; 
         break;
       }
     }

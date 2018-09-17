@@ -22,53 +22,56 @@ const char * const usage = "" \
   return (1);
 
 int main(int argc, char *argv[]) {
-  char *cookies_file_path;
+  char *cookie_file_path;
   /* What the program is doing */
   bool json = false,
     set_cookie = false;
   Cookie new = {0}; /* If set_cookie, the new cookie */
-  Cookiejar jar = {0}; /* holds cookies file data */
+  Cookiejar jar = {0}; /* holds cookie file data */
   FILE *fp = NULL; /* Gets open w+ for any changes to cookies */
 
   if (argc < 3) {
     fputs(usage, stderr);
-    EEXIT();
+    { EEXIT(); }
   }
 
-  cookies_file_path = argv[2];
+  cookie_file_path = argv[2];
 
   if (0 == strcmp(argv[1], "--json") || 0 == strcmp(argv[1], "-j")) {
     /* we're gonna print some JSON */
     json = true;
-  } else {
+  } else if (*argv[1] == '-') {
+    /* help or unknown option */
+    fputs(usage, stderr);
+    { EEXIT(); }
+  } else { /* Set-Cookie header */
     enum SetCookie_result result;
-
-    /* Set-Cookie syntax */
+    
     switch ((result = SetCookie(argv[1], &new))) {
       case SET_COOKIE_RESULT_OK:
         set_cookie = true;
         break;
       default: /* Any other error */
         fprintf(stderr, "error: Set-Cookie: %s\n", SetCookie_result_strings[result]);
-        EEXIT();
+        { EEXIT(); }
     }
   }
 
-  /* Load the cookies file */
-  switch (cookiejar_open(cookies_file_path, &jar)) {
+  /* Load the cookie file */
+  switch (cookiejar_open(cookie_file_path, &jar)) {
     case COOKIEJAR_RESULT_OPEN_FAILED:
     case COOKIEJAR_RESULT_MAP_FAILED:
-      fprintf(stderr, "error: could not load cookies file (errno %i)\n", errno);
-      EEXIT();
+      fprintf(stderr, "error: could not load cookie file (errno %i)\n", errno);
+      { EEXIT(); }
     case COOKIEJAR_RESULT_INVALID_FILE:
-      fprintf(stderr, "error: invalid cookies file\n");
-      EEXIT();
+      fprintf(stderr, "error: invalid cookie file\n");
+      { EEXIT(); }
   }
 
   if (json) { /* JSON */
     if (!cookiejar_JSON(&jar, stdout)) {
       fprintf(stderr, "error: could not print JSON (errno %i)\n\n", errno);
-      EEXIT();
+      { EEXIT(); }
     }
   } else if (set_cookie) { /* Set-Cookie: */
     int x = -1;
@@ -95,14 +98,14 @@ int main(int argc, char *argv[]) {
     /* Set new cookie */
     memcpy(&jar.cookies[x], &new, sizeof(Cookie));
 
-    if ((fp = fopen(cookies_file_path, "w+")) == NULL) {
-      fprintf(stderr, "error: could not open cookies file for write (errno %i)\n", errno);
-      EEXIT();
+    if ((fp = fopen(cookie_file_path, "w+")) == NULL) {
+      fprintf(stderr, "error: could not open cookie file for write (errno %i)\n", errno);
+      { EEXIT(); }
     }
 
     if (!cookiejar_write(&jar, fp)) {
-      fprintf(stderr, "error: could not write cookies file (errno %i)\n", errno);
-      EEXIT();
+      fprintf(stderr, "error: could not write cookie file (errno %i)\n", errno);
+      { EEXIT(); }
     }
 
     fclose(fp);

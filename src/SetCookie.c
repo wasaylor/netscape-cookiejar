@@ -23,7 +23,7 @@ bool is_rfc2616_token(char *str) {
   char c;
 
   while ((c = *str++))
-    if ((c >= 0 && c <= 31) || c == 127 || strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL)
+    if ((c >= 0 && c <= 31) || c == 127 || strchr("()<>@,;:\\\"/[]?={} \t", c))
       return false;
 
   return true;
@@ -68,35 +68,45 @@ enum SetCookie_result SetCookie(char *header, Cookie *c) {
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
 
   /* cookie-string
-     this becomes what we parse */
+     This is what we're parsing now */
   string = header + SET_COOKIE_HEADER_LEN + 1;
   
-  /* <cookie-name> */
+  /* <cookie-name>
+     *Should* be the very first thing in cookie-string */
   pair.name = string;
 
-  if ((string = strchr(string, '=')) == NULL) /* "=" */
+  /* "="
+     Separates the cookie-name and cookie-value, make it 0 to stringify pair.name */
+  string = strchr(string, '=');
+  if (!string) 
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
   *string++ = '\0';
 
-  /* <cookie-value> */
+  /* <cookie-value>
+     Comes after  "=" */
   pair.value = string;
 
-  /* cookie-av */
+  /* cookie-av
+     These are the "directives" */
   for (numav = 0; *string && numav < SET_COOKIE_MAX_AV + 1; numav++) {
-    if ((string = strchr(string, ';')) == NULL) /* move to the next av */
-      break; /* no more directives */
+    /* Get the next av */
+    string = strchr(string, ';'); 
+    if (!string) 
+      break; 
 
-    /* ";" SP */
+    /* ";" SP
+       An av must begin with this */
     if (!(string[0] == ';' && string[1] == ' '))
       return SET_COOKIE_RESULT_INVALID_SYNTAX;
     *string++ = '\0';
     *string++ = '\0';
 
     /* before we start parsing the av, check limits */
-    if (SET_COOKIE_MAX_AV == numav)
+    if (numav >= SET_COOKIE_MAX_AV)
       return SET_COOKIE_RESULT_AV_EXCEEDED;
 
-    /* cookie-av */
+    /* cookie-av
+       Case insensitive */
     if (strcasestr(string, "Expires=") == string) {
       string += 8;
       av[numav].av = SET_COOKIE_AV_EXPIRES;
@@ -122,35 +132,43 @@ enum SetCookie_result SetCookie(char *header, Cookie *c) {
       av[numav].av = SET_COOKIE_AV_HTTPONLY;
       av[numav].value = NULL;
     } else { 
+      /* Anything we don't recognize will be considered an "extension"
+         .value is the entire av */
       av[numav].av = SET_COOKIE_AV_EXTENSION;
       av[numav].value = string;
     } 
   }
 
-  /* check and set the cookie name and value */
+  /* Now everything is stringified
+     validations start here */
+
+  /* cookie-name
+     Must be a "token" and non-empty */
   if (!is_rfc2616_token(pair.name) || *pair.name == '\0')
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
   c->Name = pair.name;
 
-  if (*pair.value == '\"') { /* DQUOTE *cookie-octet DQUOTE */
+  /* DQUOTE *cookie-octet DQUOTE
+     cookie-value may be enclosed in double quotes - strip them out if-so */
+  if (*pair.value == '\"') { 
     char *ldquote;
 
     ldquote = strrchr(pair.value + 1, '\"');
-    fputs(ldquote, stderr);
-    if (!ldquote || *(ldquote + 1) != '\0') /* doesn't end with a DQUOTE */
+    if (!ldquote || *(ldquote + 1) != '\0') /* Doesn't end with a DQUOTE */
       return SET_COOKIE_RESULT_INVALID_SYNTAX;
 
-    /* move past first DQUOTE and null-terminate last DQUOTE */
+    /* Move past first DQUOTE and null-terminate on last DQUOTE */
     ++pair.value;
     *ldquote = '\0';
-    fputs(pair.value, stderr);
   }
 
+  /* cookie-value
+     Must be a "cookie-octet" and non-empty */
   if (!is_rfc6265_cookie_octet(pair.value) || *pair.value == '\0')
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
   c->Value = pair.value;
 
-  /* set the directives */
+  /* Validate and set directives */
   while (numav--) {
     switch (av[numav].av) {
       case SET_COOKIE_AV_EXPIRES:

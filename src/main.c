@@ -8,7 +8,7 @@
 #include "cookiejar.h"
 #include "SetCookie.h"
 
-const char *usage = "" \
+const char * const usage = "" \
 "cookiejar <option> <Netscape HTTP cookies file>\n" \
 "options:\n" \
 "  --help Print this dialogue\n" \

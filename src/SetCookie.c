@@ -9,12 +9,12 @@
 const char * const SetCookie_result_strings[] = {
   NULL,
   "OK",
-  "Invalid syntax",
-  "Too many directives",
-  "Use Max-Age instead",
-  "Missing Max-Age directive",
-  "Missing Domain directive",
-  "Missing Path directive"
+  "invalid syntax - see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie",
+  "too many directives",
+  "use Max-Age instead",
+  "missing Max-Age directive",
+  "missing Domain directive",
+  "missing Path directive"
 };
 
 /* allowed characters in the name portion of the <cookie-name>=<cookie-value> directive for Set-Cookie:

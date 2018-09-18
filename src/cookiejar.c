@@ -121,7 +121,7 @@ bool cookiejar_JSON(Cookiejar *jar, FILE *fp) {
     return false;
 
   for (int i = 0; i < jar->n; i++) {
-    if (jar->cookies[i].comm)
+    if (jar->cookies[i].evict || jar->cookies[i].comm)
       continue;
 
     printed = fprintf(fp,
@@ -159,6 +159,9 @@ enum cookiejar_result cookiejar_write(Cookiejar *jar, FILE *fp) {
   for (int i = 0; i < jar->n; i++) {
     char *format;
     int printed;
+
+    if (jar->cookies[i].evict) /* deleted */
+      continue;
 
     if (jar->cookies[i].comm) { /* Comment / empty line */
       printed = fprintf(fp, "%s\n",

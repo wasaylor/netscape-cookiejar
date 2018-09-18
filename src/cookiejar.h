@@ -20,10 +20,11 @@ enum cookiejar_result {
 };
 
 typedef struct {
+  bool evict; /* mark to be deleted */
   bool comm; /* Is it a comment in the file ? (or empty line) */
   bool HttpOnly;
   char *Domain;
-  bool flag;
+  bool flag; /* ? */
   char *Path;
   bool Secure;
   time_t Expires;

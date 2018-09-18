@@ -12,8 +12,7 @@
 
 #include "cookiejar.h"
 
-/* Parses a boolean string from a cookiejar file piece */
-bool parse_bool(char *p, bool *out) {
+bool ptob(char *p, bool *out) {
 #ifdef COOKIEJAR_FAST_BOOLS
   *out = *p == 'T';
 #else
@@ -99,10 +98,10 @@ bool cookiejar_parse_do(Cookiejar *jar) {
     }
 
     c->Domain = p[0];
-    if (!parse_bool(p[1], &c->flag))
+    if (!ptob(p[1], &c->flag))
       return false;
     c->Path = p[2];
-    if (!parse_bool(p[3], &c->Secure))
+    if (!ptob(p[3], &c->Secure))
       return false;
     c->Expires = (time_t)atol(p[4]);
     c->Name = p[5];

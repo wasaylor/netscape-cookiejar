@@ -23,7 +23,7 @@ const char * const usage = "" \
   return (1);
 
 int exist_cookie(Cookiejar *jar, int index, bool exact, char *Name, char *Domain, char *Path) {
-  int i, x;
+  int x;
   bool wn, wd, wp; /* wildcards */
 
   if (!exact) {
@@ -34,23 +34,28 @@ int exist_cookie(Cookiejar *jar, int index, bool exact, char *Name, char *Domain
     wn = wd = wp = false;
   }
 
-  for (i = index, x = -1; i < jar->n; i++) {
-    int match;
+  for (x = -1; index < jar->n; index++) {
+    Cookie *c;
+    int match = 0;
+
+    c = &jar->cookies[index];
 
     /* Skip already evicted and non-cookies */
-    if (jar->cookies[i].evict || jar->cookies[i].comm)
+    if (c->evict || c->comm)
       continue;
 
     /* If the user agent receives a new cookie with the same cookie-name,
        domain-value, and path-value as a cookie that it has already stored,
        the existing cookie is evicted and replaced with the new cookie. */
-    match = 0;
-    if (!wn) match += strcmp(jar->cookies[i].Name, Name);
-    if (!wd) match += strcmp(jar->cookies[i].Domain, Domain);
-    if (!wp) match += strcmp(jar->cookies[i].Path, Path);
+    if (!wn)
+      match += strcmp(c->Name, Name);
+    if (!wd)
+      match += strcmp(c->Domain, Domain);
+    if (!wp)
+      match += strcmp(c->Path, Path);
 
     if (0 == match) {
-      x = i; 
+      x = index;
       break;
     }
   }
@@ -80,14 +85,19 @@ int main(int argc, char *argv[]) {
     json = true;
   } else if (0 == strcmp(argv[1], "--evict") || 0 == strcmp(argv[1], "-e")) {
     /* Evicting a cookie */
-    evict_av_values = &argv[2];
+    if (argc != 6) {
+      fputs(usage, stderr);
+      { EEXIT(); }
+    }
+
+    evict_av_values = &argv[2]; /* argv[2], argv[3], argv[4] */
     evict = true;
   } else if (*argv[1] == '-') {
     /* --help or some other unknown option */
     fputs(usage, stderr);
     { EEXIT(); }
   } else { 
-    /* Set-Cookie header */
+    /* else assume Set-Cookie header */
     enum SetCookie_result result;
     
     switch ((result = SetCookie(argv[1], &new))) {
@@ -126,7 +136,7 @@ int main(int argc, char *argv[]) {
 
   if (set_cookie) {
     /* Find cookie to replace */
-    if ((index = exist_cookie(&jar, 0, false, new.Name, new.Domain, new.Path)) < 0) {
+    if ((index = exist_cookie(&jar, 0, true, new.Name, new.Domain, new.Path)) < 0) {
       index = jar.n; /* Set new */
       if (++jar.n > COOKIES_MAX) {}
         /* error */
@@ -135,7 +145,7 @@ int main(int argc, char *argv[]) {
   } else if (evict) {
     index = 0;
     /* Find the cookie(s) to evict */
-    while ((index = exist_cookie(&jar, index, true,
+    while ((index = exist_cookie(&jar, index, false,
       evict_av_values[0], evict_av_values[1], evict_av_values[2])) > -1) {
       /* mark */
       jar.cookies[index].evict = true;

@@ -32,7 +32,7 @@ size_t parse_remain(Cookiejar *jar) {
   if (jar->parse == NULL)
     return 0;
 
-  d = (jar->parse - jar->file);
+  d = (jar->parse - (char*)jar->file);
   return (jar->st_size - (size_t)d);
 }
 
@@ -64,7 +64,6 @@ bool cookiejar_parse_do(Cookiejar *jar) {
   size_t rem;
 
   while ((rem = parse_remain(jar)) > 0 && jar->n < COOKIES_MAX) {
-    int x, line;
     Cookie *c;
     char *p[7];
 
@@ -198,13 +197,29 @@ enum cookiejar_result cookiejar_write(Cookiejar *jar, FILE *fp) {
 enum cookiejar_result cookiejar_open(char *path, Cookiejar *jar) {
   int fd;
   struct stat s;
-  char *file;
+  void *file;
 
   if ((fd = open(path, O_RDONLY)) < 0)
     return COOKIEJAR_RESULT_OPEN_FAILED;
 
-  if (fstat(fd, &s) < 0)
+  if (fstat(fd, &s) < 0) {
+    /* Failed to stat the file */
+    close(fd);
     return COOKIEJAR_RESULT_OPEN_FAILED;
+  }
+
+  if (s.st_size <= 0) {
+    /* Empty file
+       */
+    close(fd);
+
+    jar->file = NULL;
+    jar->st_size = 0;
+    jar->parse = NULL;
+    jar->n = 0;
+
+    return COOKIEJAR_RESULT_OK;
+  }
 
   /* Map the cookies file into memory */
   file = mmap(
@@ -214,7 +229,6 @@ enum cookiejar_result cookiejar_open(char *path, Cookiejar *jar) {
     MAP_FILE|MAP_PRIVATE, /* do not copy changes to file */
     fd,
     0);
-
   close(fd); /* don't need this anymore */
 
   if (MAP_FAILED == file)
@@ -222,7 +236,7 @@ enum cookiejar_result cookiejar_open(char *path, Cookiejar *jar) {
 
   jar->file = file;
   jar->st_size = s.st_size;
-  jar->parse = file;
+  jar->parse = (char*)file;
   jar->n = 0;
 
   if (!cookiejar_parse_do(jar)) /* parse the file */

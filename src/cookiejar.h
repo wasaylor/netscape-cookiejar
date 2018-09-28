@@ -24,7 +24,7 @@ typedef struct {
   bool comm; /* Is it a comment in the file ? (or empty line) */
   bool HttpOnly;
   char *Domain;
-  bool flag; /* ? */
+  bool flag; /* true is Domain begins with '.' */
   char *Path;
   bool Secure;
   time_t Expires;
@@ -33,7 +33,7 @@ typedef struct {
 } Cookie;
 
 typedef struct {
-  char *file;
+  void *file;
   size_t st_size;
   char *parse;
   Cookie cookies[COOKIES_MAX];

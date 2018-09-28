@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
     { EEXIT(); }
   }
 
-  if (!cookiejar_write(&jar, fp)) {
+  if (cookiejar_write(&jar, fp) != COOKIEJAR_RESULT_OK) {
     fprintf(stderr, "error: could not write cookie file (errno %i)\n", errno);
     { EEXIT(); }
   }

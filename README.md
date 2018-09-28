@@ -14,13 +14,13 @@ Sets or replaces a cookie. It loosely follows [RFC 6265 section 4.1](https://too
 \$ netscape-cookiejar 'Set-Cookie foo=bar; Domain=www.example.com; Path=/; Max-Age=1337; Secure' cookies.txt
 
 #### -e, --evict \<Name\> \<Domain\> \<Path\>
-Cookies can be deleted with the --evict option. Substitute Name, Domain, or Path with * to match any cookie by that directive.
+Cookies can be deleted with the --evict option. Substitute Name, Domain, or Path with '\*' to match any cookie by that directive.
 
 \$ netscape-cookijear --evict foo www.example.com / cookies.txt # delete an exact cookie
 
-\$ netscape-cookiejar --evict \* www.example.com \* cookies.txt # delete any cookies for the www.example.com Domain
+\$ netscape-cookiejar --evict \\\* www.example.com \\\* cookies.txt # delete any cookies for the www.example.com Domain
 
-\$ netscape-cookiejar -e \* \* \* cookies.txt # delete all your cookies
+\$ netscape-cookiejar -e \\\* \\\* \\\* cookies.txt # delete all your cookies
 
 #### -j, --json
 Prints the cookies as a null-terminated JSON array of cookie objects to stdout. The cookie object will have `name`, `value`, `domain`, and `path` strings; an `expires` number (unix time;) and `httponly` and `secure` booleans.

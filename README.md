@@ -8,7 +8,7 @@ A very simple Makefile is included
 cookiejar \<option\> \<Netscape HTTP cookie file\>
 
 ### options
-#### \<Set-Cookie header\>
+#### \<Set-Cookie HTTP header\>
 Sets or replaces a cookie. It loosely follows [RFC 6265 section 4.1](https://tools.ietf.org/html/rfc6265#section-4.1) and supports the `cookie-name=cookie-value`, `Domain`, `Path`, `Max-Age`, `Secure`, and `HttpOnly` directives. It does not support `Expires` because I'm lazy (it will tell you to use `Max-Age`.) It will replace an existing cookie by name, domain, and path. See the [Set-Cookie MDN doc](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie) for more.
 
 \$ netscape-cookiejar 'Set-Cookie foo=bar; Domain=www.example.com; Path=/; Max-Age=1337; Secure' cookies.txt

@@ -9,7 +9,7 @@
 const char * const SetCookie_result_strings[] = {
   NULL,
   "OK",
-  "invalid syntax - see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie",
+  "invalid syntax",
   "too many directives",
   "use Max-Age instead",
   "missing Max-Age directive",
@@ -18,7 +18,8 @@ const char * const SetCookie_result_strings[] = {
 };
 
 /* allowed characters in the name portion of the <cookie-name>=<cookie-value> directive for Set-Cookie:
-   https://tools.ietf.org/html/rfc2616#section-2.2 */
+   https://tools.ietf.org/html/rfc2616#section-2.2
+   */
 bool is_rfc2616_token(char *str) {
   char c;
 
@@ -46,7 +47,7 @@ bool is_rfc6265_cookie_octet(char *str) {
   return true;
 }
 
-enum SetCookie_result SetCookie(char *header, Cookie *c) {
+enum SetCookie_result SetCookie(char *header, Cookie *out) {
   char *string;
   struct {
     char *name;
@@ -146,7 +147,7 @@ enum SetCookie_result SetCookie(char *header, Cookie *c) {
      Must be a "token" and non-empty */
   if (!is_rfc2616_token(pair.name) || *pair.name == '\0')
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
-  c->Name = pair.name;
+  out->Name = pair.name;
 
   /* DQUOTE *cookie-octet DQUOTE
      cookie-value may be enclosed in double quotes - strip them out if-so */
@@ -166,7 +167,7 @@ enum SetCookie_result SetCookie(char *header, Cookie *c) {
      Must be a "cookie-octet" and non-empty */
   if (!is_rfc6265_cookie_octet(pair.value) || *pair.value == '\0')
     return SET_COOKIE_RESULT_INVALID_SYNTAX;
-  c->Value = pair.value;
+  out->Value = pair.value;
 
   /* Validate and set directives */
   while (numav--) {
@@ -176,23 +177,26 @@ enum SetCookie_result SetCookie(char *header, Cookie *c) {
         break;
       case SET_COOKIE_AV_MAX_AGE:
         if ((delta_seconds = atol(av[numav].value)) > 0)
-          c->Expires = time(NULL) + delta_seconds;
+          out->Expires = time(NULL) + delta_seconds;
         else
-          c->Expires = (time_t)0;
+          out->Expires = (time_t)0;
 
         set_max_age = true;
         break;
       case SET_COOKIE_AV_DOMAIN:
-        c->Domain = av[numav].value;
+        if (*av[numav].value == '.')
+          out->flag = true;
+
+        out->Domain = av[numav].value;
         break;
       case SET_COOKIE_AV_PATH:
-        c->Path = av[numav].value;
+        out->Path = av[numav].value;
         break;
       case SET_COOKIE_AV_SECURE:
-        c->Secure = true;
+        out->Secure = true;
         break;
       case SET_COOKIE_AV_HTTPONLY:
-        c->HttpOnly = true;
+        out->HttpOnly = true;
         break;
       /* default:
         fprintf(stderr, "warning: directive \"%s\" is not supported\n", av[numav].value); */
@@ -209,14 +213,11 @@ enum SetCookie_result SetCookie(char *header, Cookie *c) {
     return SET_COOKIE_RESULT_MISSING_MAX_AGE;
 
   /* Must have a domain */
-  if (!c->Domain || *c->Domain == '\0')
+  if (!out->Domain || *out->Domain == '\0')
     return SET_COOKIE_RESULT_MISSING_DOMAIN;
 
-  if (*c->Domain == '.')
-    c->flag = true;
-
   /* Must have a path */
-  if (!c->Path)
+  if (!out->Path)
     return SET_COOKIE_RESULT_MISSING_PATH;
 
   return SET_COOKIE_RESULT_OK;

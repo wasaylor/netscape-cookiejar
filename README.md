@@ -5,7 +5,7 @@ A simple program to modify the cookies.txt (Netscape) file created by curl. The 
 A very simple Makefile is included
 
 ## usage
-> cookiejar \<option\> \<Netscape HTTP cookie file\>
+> netscape-cookiejar \<option\> \<Netscape HTTP cookie file\>
 
 ### options
 #### \<Set-Cookie HTTP header\>

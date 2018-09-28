@@ -9,7 +9,7 @@
 #include "SetCookie.h"
 
 const char * const usage = "" \
-"usage: cookiejar <option> <Netscape HTTP cookie file>\n" \
+"usage: netscape-cookiejar <option> <Netscape HTTP cookie file>\n" \
 "options:\n" \
 "  <Set-Cookie header> Set a cookie in the cookie file using HTTP Set-Cookie header syntax\n" \
 "  -e, --evict <Name or *> <Domain or *> <Path or *> Delete a cookie from the cookie file\n" \
@@ -22,11 +22,12 @@ const char * const usage = "" \
   cookiejar_finish(&jar); \
   return (1);
 
-int exist_cookie(Cookiejar *jar, int index, bool exact, char *Name, char *Domain, char *Path) {
+/* Finds a cookie */
+int exist_cookie_index(Cookiejar *jar, int index, bool exact, char *Name, char *Domain, char *Path) {
+  bool wn, wd, wp;
   int x;
-  bool wn, wd, wp; /* wildcards */
 
-  if (!exact) {
+  if (!exact) { /* If not exact, wildcards */
     wn = 0 == strcmp("*", Name);
     wd = 0 == strcmp("*", Domain);
     wp = 0 == strcmp("*", Path);
@@ -105,7 +106,10 @@ int main(int argc, char *argv[]) {
         set_cookie = true;
         break;
       default: /* Any other error */
-        fprintf(stderr, "error: Set-Cookie: %s\n", SetCookie_result_strings[result]);
+        fprintf(stderr,
+          "error: Set-Cookie: %s - see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie\n",
+          SetCookie_result_strings[result]);
+
         { EEXIT(); }
     }
   }
@@ -126,7 +130,7 @@ int main(int argc, char *argv[]) {
 
   if (json) { /* JSON */
     if (!cookiejar_JSON(&jar, stdout)) {
-      fprintf(stderr, "error: could not print JSON (errno %i)\n\n", errno);
+      fprintf(stderr, "error: could not print JSON (errno %i)\n", errno);
       { EEXIT(); }
     }
 
@@ -136,7 +140,7 @@ int main(int argc, char *argv[]) {
 
   if (set_cookie) {
     /* Find cookie to replace */
-    if ((index = exist_cookie(&jar, 0, true, new.Name, new.Domain, new.Path)) < 0) {
+    if ((index = exist_cookie_index(&jar, 0, true, new.Name, new.Domain, new.Path)) < 0) {
       index = jar.n; /* Set new */
       if (++jar.n > COOKIES_MAX) {}
         /* error */
@@ -145,9 +149,9 @@ int main(int argc, char *argv[]) {
   } else if (evict) {
     index = 0;
     /* Find the cookie(s) to evict */
-    while ((index = exist_cookie(&jar, index, false,
+    while ((index = exist_cookie_index(&jar, index, false,
       evict_av_values[0], evict_av_values[1], evict_av_values[2])) > -1) {
-      /* mark */
+      /* mark as evicted */
       jar.cookies[index].evict = true;
     }
   }

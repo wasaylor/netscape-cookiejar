@@ -1,5 +1,5 @@
 # netscape-cookiejar
-A simple program to modify the cookies.txt (Netscape) file created by curl. See the [original spec](https://curl.haxx.se/rfc/cookie_spec.html) for more details.
+A simple program to modify the cookies.txt (Netscape) file created by curl. The file _will_ be modified in-place so back up your cookies if you care about them before using this program.
 
 ## building
 A very simple Makefile is included
@@ -16,7 +16,7 @@ Sets or replaces a cookie. It loosely follows [RFC 6265 section 4.1](https://too
 #### -e, --evict \<Name\> \<Domain\> \<Path\>
 Cookies can be deleted with the --evict option. Substitute Name, Domain, or Path with '\*' to match any cookie by that directive.
 
-\$ netscape-cookijear --evict foo www.example.com / cookies.txt # delete an exact cookie
+\$ netscape-cookiejar --evict foo www.example.com / cookies.txt # delete an exact cookie
 
 \$ netscape-cookiejar --evict \\\* www.example.com \\\* cookies.txt # delete any cookies for the www.example.com Domain
 

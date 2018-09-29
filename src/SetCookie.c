@@ -139,15 +139,7 @@ enum SetCookie_result SetCookie(char *header, Cookie *out) {
       av[numav].value = string;
     } 
   }
-
-  /* Now everything is stringified
-     validations start here */
-
-  /* cookie-name
-     Must be a "token" and non-empty */
-  if (!is_rfc2616_token(pair.name) || *pair.name == '\0')
-    return SET_COOKIE_RESULT_INVALID_SYNTAX;
-  out->Name = pair.name;
+  string = NULL; /* fin */
 
   /* DQUOTE *cookie-octet DQUOTE
      cookie-value may be enclosed in double quotes - strip them out if-so */
@@ -162,6 +154,15 @@ enum SetCookie_result SetCookie(char *header, Cookie *out) {
     ++pair.value;
     *ldquote = '\0';
   }
+
+  /* Now everything is tokenized
+     validations begin */
+
+  /* cookie-name
+     Must be a "token" and non-empty */
+  if (!is_rfc2616_token(pair.name) || *pair.name == '\0')
+    return SET_COOKIE_RESULT_INVALID_SYNTAX;
+  out->Name = pair.name;
 
   /* cookie-value
      Must be a "cookie-octet" and non-empty */
@@ -202,7 +203,6 @@ enum SetCookie_result SetCookie(char *header, Cookie *out) {
         fprintf(stderr, "warning: directive \"%s\" is not supported\n", av[numav].value); */
     }
   }
-  string = NULL; /* fin */
 
   /* If a cookie has both the Max-Age and the Expires attribute, the Max-
      Age attribute has precedence and controls the expiration date of the
@@ -217,7 +217,7 @@ enum SetCookie_result SetCookie(char *header, Cookie *out) {
     return SET_COOKIE_RESULT_MISSING_DOMAIN;
 
   /* Must have a path */
-  if (!out->Path)
+  if (!out->Path || *out->Path == '\0')
     return SET_COOKIE_RESULT_MISSING_PATH;
 
   return SET_COOKIE_RESULT_OK;
